@@ -1,0 +1,76 @@
+server {
+    listen 80;
+    server_name 86.50.23.139;
+
+    # Flask etusivu
+    location / {
+        proxy_pass http://127.0.0.1:8010/;   # Flask/Gunicorn portti
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Flask API
+    location /api/ {
+        proxy_pass http://127.0.0.1:5001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Streamlit Data Analysis
+    location /data-analysis/ {
+        proxy_pass http://127.0.0.1:8501/data-analysis/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # Staattinen Chat-sivu
+    location /chat {
+        alias /var/www/html/chat;
+        index index.html;
+        try_files $uri $uri/ /chat/index.html;
+    }
+
+    # WebSocket proxy MQTT brokerille
+    location /mqtt {
+        proxy_pass http://127.0.0.1:9001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+  # LEMP-stack Kubernetesissa
+    location /kube/ {
+        # Korvaa tämä oikealla Minikube IP:llä ja portilla
+        proxy_pass http://192.168.49.2:30496/kube/;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        # WebSocket tuki (jos tarvitaan)
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_request_upgrade;
+        proxy_set_header Connection "upgrade";
+
+        # Timeout-asetukset
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+    }
+
+
+    root /var/www/html;
+    index index.html index.php index.htm;
+}

@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LEMP Stack K8s Demo</title>
+    <base href="/kube/">
+    <style>
+        body { font-family: Arial; max-width: 800px; margin: 50px auto; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        input, textarea { width: 100%; padding: 8px; margin-top: 5px; margin-bottom: 10px; border-radius: 4px; border: 1px solid #ccc; }
+        #result { margin-top: 20px; padding: 15px; background: #f8f9fa; border-radius: 4px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LEMP Stack on Kubernetes</h1>
+        <p>Frontend: Nginx | Backend: Python/Flask | Database: MySQL</p>
+        <p><strong>Server:</strong> <span id="serverInfo"></span></p>
+
+        <div>
+            <button onclick="checkHealth()">Check Backend Health</button>
+            <button onclick="initDB()">Initialize Database</button>
+            <button onclick="getUsers()">Get Users</button>
+        </div>
+
+        <h3>Send a Message</h3>
+        <input type="text" id="user" placeholder="Your name" />
+        <textarea id="message" rows="3" placeholder="Your message"></textarea>
+        <button onclick="sendMessage()">Send Message</button>
+
+        <h3>Messages</h3>
+        <button onclick="getMessages()">Refresh Messages</button>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const resultDiv = document.getElementById('result');
+        const serverInfo = document.getElementById('serverInfo');
+        serverInfo.textContent = window.location.href;
+
+        async function checkHealth() {
+            const res = await fetch('/kube/api/health');
+            const data = await res.json();
+            resultDiv.textContent = 'Health Check: ' + JSON.stringify(data, null, 2);
+        }
+
+        async function initDB() {
+            const res = await fetch('/kube/api/init-db');
+            const data = await res.json();
+            resultDiv.textContent = 'DB Init: ' + JSON.stringify(data, null, 2);
+        }
+
+        async function getUsers() {
+            const res = await fetch('/kube/api/users');
+            const data = await res.json();
+            resultDiv.textContent = 'Users: ' + JSON.stringify(data, null, 2);
+        }
+
+        async function getMessages() {
+            const res = await fetch('/kube/api/messages');
+            const data = await res.json();
+            resultDiv.textContent = 'Messages:\n' + JSON.stringify(data, null, 2);
+        }
+
+        async function sendMessage() {
+            const user = document.getElementById('user').value;
+            const message = document.getElementById('message').value;
+            if (!user || !message) {
+                alert("Please fill in both fields!");
+                return;
+            }
+            const res = await fetch('/kube/api/messages', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user, message })
+            });
+            const data = await res.json();
+            if (res.status === 201) {
+                resultDiv.textContent = 'Message sent!';
+                getMessages(); // Päivitä viestit heti
+            } else {
+                resultDiv.textContent = 'Error: ' + JSON.stringify(data);
+            }
+        }
+    </script>
+</body>
+</html>
